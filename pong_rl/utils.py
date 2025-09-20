@@ -13,7 +13,7 @@ def set_random_seeds(seed: int, enable_tf_determinism: bool = True) -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
-    tf.keras.utils.set_random_seed(seed)
+    tf.random.set_seed(seed)
 
     if enable_tf_determinism:
         try:

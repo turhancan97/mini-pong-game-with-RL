@@ -176,40 +176,58 @@ def _update_ball(
     _ = delta_frame_time
     dft = 7.5
 
-    ball_x += ball_x_dir * BALL_X_SPEED * dft
-    ball_y += ball_y_dir * BALL_Y_SPEED * dft
+    new_x = ball_x + ball_x_dir * BALL_X_SPEED * dft
+    new_y = ball_y + ball_y_dir * BALL_Y_SPEED * dft
 
     score = -0.05
 
-    if (
-        (ball_x <= (PADDLE_BUFFER + PADDLE_WIDTH))
-        and ((ball_y + BALL_HEIGHT) >= paddle1_y)
-        and (ball_y <= (paddle1_y + PADDLE_HEIGHT))
-        and (ball_x_dir == -1)
-    ):
-        ball_x_dir = 1
-        score = 10
-    elif ball_x <= 0:
-        ball_x_dir = 1
-        score = -10
-        return score, ball_x, ball_y, ball_x_dir, ball_y_dir
-
-    if (
-        (ball_x >= (WINDOW_WIDTH - PADDLE_WIDTH - PADDLE_BUFFER))
-        and ((ball_y + BALL_HEIGHT) >= paddle2_y)
-        and (ball_y <= (paddle2_y + PADDLE_HEIGHT))
-        and (ball_x_dir == 1)
-    ):
-        ball_x_dir = -1
-    elif ball_x >= WINDOW_WIDTH - BALL_WIDTH:
-        ball_x_dir = -1
-        return score, ball_x, ball_y, ball_x_dir, ball_y_dir
-
-    if ball_y <= 0:
-        ball_y = 0
+    # Vertical wall collisions
+    if new_y <= 0:
+        new_y = 0
         ball_y_dir = 1
-    elif ball_y >= GAME_HEIGHT - BALL_HEIGHT:
-        ball_y = GAME_HEIGHT - BALL_HEIGHT
+    elif new_y >= GAME_HEIGHT - BALL_HEIGHT:
+        new_y = GAME_HEIGHT - BALL_HEIGHT
         ball_y_dir = -1
 
-    return score, ball_x, ball_y, ball_x_dir, ball_y_dir
+    # Left paddle (agent) collision or miss
+    left_paddle_edge = PADDLE_BUFFER + PADDLE_WIDTH
+    if ball_x_dir == -1 and new_x <= left_paddle_edge:
+        paddle_top = paddle1_y
+        paddle_bottom = paddle1_y + PADDLE_HEIGHT
+        ball_top = new_y
+        ball_bottom = new_y + BALL_HEIGHT
+
+        if ball_bottom >= paddle_top and ball_top <= paddle_bottom:
+            new_x = left_paddle_edge
+            ball_x_dir = 1
+            score = 10
+        else:
+            new_x = PADDLE_BUFFER
+            ball_x_dir = 1
+            return -10, new_x, new_y, ball_x_dir, ball_y_dir
+
+    # Right paddle (opponent) collision or wall
+    right_paddle_edge = WINDOW_WIDTH - PADDLE_BUFFER - PADDLE_WIDTH
+    if ball_x_dir == 1 and new_x + BALL_WIDTH >= right_paddle_edge:
+        paddle_top = paddle2_y
+        paddle_bottom = paddle2_y + PADDLE_HEIGHT
+        ball_top = new_y
+        ball_bottom = new_y + BALL_HEIGHT
+
+        if ball_bottom >= paddle_top and ball_top <= paddle_bottom:
+            new_x = right_paddle_edge - BALL_WIDTH
+            ball_x_dir = -1
+        else:
+            new_x = WINDOW_WIDTH - PADDLE_BUFFER - BALL_WIDTH
+            ball_x_dir = -1
+            return score, new_x, new_y, ball_x_dir, ball_y_dir
+
+    # Horizontal wall out-of-bounds (failsafe)
+    if new_x <= 0:
+        new_x = 0
+        ball_x_dir = 1
+    elif new_x >= WINDOW_WIDTH - BALL_WIDTH:
+        new_x = WINDOW_WIDTH - BALL_WIDTH
+        ball_x_dir = -1
+
+    return score, new_x, new_y, ball_x_dir, ball_y_dir
