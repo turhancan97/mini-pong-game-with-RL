@@ -1,0 +1,45 @@
+defaults:
+  - hydra/job_logging: disabled
+  - hydra/hydra_logging: disabled
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
+  job:
+    chdir: false
+
+paths:
+  model_dir: models/latest_model
+  checkpoint_dir: checkpoints/latest
+  plot_dir: plots
+
+seed: 42
+
+reproducibility:
+  enable_tf_determinism: true
+
+agent:
+  n_actions: 3
+  img_height: 40
+  img_width: 40
+  img_history: 4
+  observe_steps: 2000
+  gamma: 0.975
+  batch_size: 64
+  replay_capacity: 2000
+  initial_epsilon: 1.0
+  target_update_tau: 0.01
+  target_update_interval: 1000
+  learning_rate: 0.00025
+  min_replay_size: 1000
+
+training:
+  total_steps: 100000
+  log_interval: 250
+  checkpoint_interval: 5000
+  render: false
+  resume: true
+
+logging:
+  plot_scores: true
