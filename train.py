@@ -100,7 +100,8 @@ def main(cfg: DictConfig) -> None:
         processed_frame = process_frame(initial_frame)
         state = stack_initial_frames(processed_frame)
 
-        for step in range(start_step, total_steps):
+        step = start_step
+        while step < total_steps:
             action = agent.select_action(state)
             reward, raw_frame, smooth_score, done = env.step(action)
             processed = process_frame(raw_frame)
@@ -108,8 +109,6 @@ def main(cfg: DictConfig) -> None:
 
             agent.store_transition(state, action, reward, next_state, done)
             loss = agent.train_step()
-
-            state = next_state
 
             if step % cfg.training.log_interval == 0:
                 print(
@@ -121,6 +120,15 @@ def main(cfg: DictConfig) -> None:
             if (step + 1) % cfg.training.checkpoint_interval == 0:
                 agent.save_checkpoint(checkpoint_dir)
                 _save_scores(plot_dir, history, cfg.logging.plot_scores)
+
+            step += 1
+
+            if done:
+                _, initial_frame = env.reset()
+                processed = process_frame(initial_frame)
+                state = stack_initial_frames(processed)
+            else:
+                state = next_state
 
         print("Training complete; saving final artifacts.")
         agent.save_model(model_dir)
