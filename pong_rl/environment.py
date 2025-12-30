@@ -8,7 +8,7 @@ from typing import Tuple
 import pygame
 import numpy as np
 
-FPS = 20
+FPS = 60
 WINDOW_WIDTH = 400
 WINDOW_HEIGHT = 420
 GAME_HEIGHT = 400
@@ -81,7 +81,14 @@ class PongEnvironment:
         self.paddle2_y = _update_paddle("right", action, self.paddle2_y, self.ball_y)
         _draw_paddle(self.screen, "right", self.paddle2_y)
 
-        score, self.ball_x, self.ball_y, self.ball_x_dir, self.ball_y_dir = _update_ball(
+        (
+            score,
+            self.ball_x,
+            self.ball_y,
+            self.ball_x_dir,
+            self.ball_y_dir,
+            done,
+        ) = _update_ball(
             self.paddle1_y,
             self.paddle2_y,
             self.ball_x,
@@ -100,7 +107,6 @@ class PongEnvironment:
             pygame.display.flip()
 
         frame = self._capture_frame()
-        done = False
         return score, frame, self.score_smoothed, done
 
     def close(self) -> None:
@@ -172,7 +178,7 @@ def _update_ball(
     ball_x_dir: int,
     ball_y_dir: int,
     delta_frame_time: float,
-) -> Tuple[float, float, float, int, int]:
+) -> Tuple[float, float, float, int, int, bool]:
     _ = delta_frame_time
     dft = 7.5
 
@@ -180,6 +186,7 @@ def _update_ball(
     new_y = ball_y + ball_y_dir * BALL_Y_SPEED * dft
 
     score = -0.05
+    done = False
 
     # Vertical wall collisions
     if new_y <= 0:
@@ -204,7 +211,9 @@ def _update_ball(
         else:
             new_x = PADDLE_BUFFER
             ball_x_dir = 1
-            return -10, new_x, new_y, ball_x_dir, ball_y_dir
+            score = -10
+            done = True
+            return score, new_x, new_y, ball_x_dir, ball_y_dir, done
 
     # Right paddle (opponent) collision or wall
     right_paddle_edge = WINDOW_WIDTH - PADDLE_BUFFER - PADDLE_WIDTH
@@ -220,7 +229,9 @@ def _update_ball(
         else:
             new_x = WINDOW_WIDTH - PADDLE_BUFFER - BALL_WIDTH
             ball_x_dir = -1
-            return score, new_x, new_y, ball_x_dir, ball_y_dir
+            score = 10
+            done = True
+            return score, new_x, new_y, ball_x_dir, ball_y_dir, done
 
     # Horizontal wall out-of-bounds (failsafe)
     if new_x <= 0:
@@ -230,4 +241,4 @@ def _update_ball(
         new_x = WINDOW_WIDTH - BALL_WIDTH
         ball_x_dir = -1
 
-    return score, new_x, new_y, ball_x_dir, ball_y_dir
+    return score, new_x, new_y, ball_x_dir, ball_y_dir, done
