@@ -47,7 +47,7 @@ def main(cfg: DictConfig) -> None:
             action = agent.select_greedy_action(state)
             reward, raw_frame, smooth_score, done = env.step(action)
             processed = process_frame(raw_frame)
-            state = append_frame(state, processed)
+            next_state = append_frame(state, processed)
 
             if step % 25 == 0:
                 print(
@@ -55,6 +55,13 @@ def main(cfg: DictConfig) -> None:
                 )
 
             step += 1
+
+            if done:
+                _, initial_frame = env.reset()
+                processed = process_frame(initial_frame)
+                state = stack_initial_frames(processed)
+            else:
+                state = next_state
 
     except KeyboardInterrupt:
         print("Inference interrupted by user.")
