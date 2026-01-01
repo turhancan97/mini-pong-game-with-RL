@@ -29,7 +29,7 @@ def _prepare_agent(cfg: DictConfig, checkpoint_dir: Path) -> Tuple[DeepQAgent, i
     return agent, start_step
 
 
-def _save_scores(plot_dir: Path, history: TrainingHistory, plot_scores: bool) -> None:
+def _save_scores(plot_dir: Path, history: TrainingHistory, plot_scores: bool, observe_steps: int) -> None:
     plot_dir.mkdir(parents=True, exist_ok=True)
     scores_path = plot_dir / "scores.pkl"
 
@@ -57,6 +57,7 @@ def _save_scores(plot_dir: Path, history: TrainingHistory, plot_scores: bool) ->
         print("No scores recorded yet; skipping plot generation.")
         return
 
+    # Plot scores
     plt.figure(figsize=(8, 4))
     plt.plot(history.steps, history.scores)
     plt.title("Training Score (Smoothed)")
@@ -68,6 +69,26 @@ def _save_scores(plot_dir: Path, history: TrainingHistory, plot_scores: bool) ->
     plt.savefig(plot_path)
     plt.close()
     print(f"Saved score plot to {plot_path}.")
+
+    # Plot loss (excluding observe_steps where no training occurs)
+    train_steps = [s for s in history.steps if s > observe_steps]
+    train_losses = [l for s, l in zip(history.steps, history.losses) if s > observe_steps]
+
+    if not train_steps:
+        print("No training losses recorded yet; skipping loss plot.")
+        return
+
+    plt.figure(figsize=(8, 4))
+    plt.plot(train_steps, train_losses)
+    plt.title("Training Loss")
+    plt.xlabel("Training Step")
+    plt.ylabel("Loss")
+    plt.grid(True, alpha=0.3)
+    loss_plot_path = plot_dir / "loss.png"
+    plt.tight_layout()
+    plt.savefig(loss_plot_path)
+    plt.close()
+    print(f"Saved loss plot to {loss_plot_path}.")
 
 
 @hydra.main(config_path="conf", config_name="config", version_base=None)
@@ -119,7 +140,7 @@ def main(cfg: DictConfig) -> None:
 
             if (step + 1) % cfg.training.checkpoint_interval == 0:
                 agent.save_checkpoint(checkpoint_dir)
-                _save_scores(plot_dir, history, cfg.logging.plot_scores)
+                _save_scores(plot_dir, history, cfg.logging.plot_scores, cfg.agent.observe_steps)
 
             step += 1
 
@@ -137,7 +158,7 @@ def main(cfg: DictConfig) -> None:
     finally:
         env.close()
 
-    _save_scores(plot_dir, history, cfg.logging.plot_scores)
+    _save_scores(plot_dir, history, cfg.logging.plot_scores, cfg.agent.observe_steps)
 
 
 if __name__ == "__main__":
