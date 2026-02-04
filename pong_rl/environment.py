@@ -17,9 +17,10 @@ PADDLE_HEIGHT = 60
 PADDLE_BUFFER = 15
 BALL_WIDTH = 20
 BALL_HEIGHT = 20
-PADDLE_SPEED = 3
-BALL_X_SPEED = 2
-BALL_Y_SPEED = 2
+PADDLE_SPEED = 1.5
+BALL_X_SPEED = 1
+BALL_Y_SPEED = 1
+OPPONENT_MISS_PROB = 0.25
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
@@ -75,10 +76,14 @@ class PongEnvironment:
         pygame.event.pump()
         self.screen.fill(BLACK)
 
-        self.paddle1_y = _update_paddle("left", action, self.paddle1_y, self.ball_y)
+        self.paddle1_y = _update_paddle(
+            "left", action, self.paddle1_y, self.ball_y, self.ball_x_dir
+        )
         _draw_paddle(self.screen, "left", self.paddle1_y)
 
-        self.paddle2_y = _update_paddle("right", action, self.paddle2_y, self.ball_y)
+        self.paddle2_y = _update_paddle(
+            "right", action, self.paddle2_y, self.ball_y, self.ball_x_dir
+        )
         _draw_paddle(self.screen, "right", self.paddle2_y)
 
         (
@@ -148,7 +153,9 @@ def _draw_ball(screen: pygame.Surface, ball_x: float, ball_y: float) -> None:
     pygame.draw.rect(screen, WHITE, ball)
 
 
-def _update_paddle(side: str, action: int, paddle_y: float, ball_y: float) -> float:
+def _update_paddle(
+    side: str, action: int, paddle_y: float, ball_y: float, ball_x_dir: int
+) -> float:
     dft = 7.5
 
     if side == "left":
@@ -159,6 +166,16 @@ def _update_paddle(side: str, action: int, paddle_y: float, ball_y: float) -> fl
 
         paddle_y = max(0, min(GAME_HEIGHT - PADDLE_HEIGHT, paddle_y))
     else:
+        if ball_x_dir == 1 and random.random() < OPPONENT_MISS_PROB:
+            if random.random() < 0.5:
+                return paddle_y
+            center_diff = (ball_y + BALL_HEIGHT / 2) - (paddle_y + PADDLE_HEIGHT / 2)
+            if center_diff > 0:
+                paddle_y -= PADDLE_SPEED * dft
+            elif center_diff < 0:
+                paddle_y += PADDLE_SPEED * dft
+            return max(0, min(GAME_HEIGHT - PADDLE_HEIGHT, paddle_y))
+
         center_diff = (ball_y + BALL_HEIGHT / 2) - (paddle_y + PADDLE_HEIGHT / 2)
         if center_diff > 0:
             paddle_y += PADDLE_SPEED * dft
@@ -185,7 +202,7 @@ def _update_ball(
     new_x = ball_x + ball_x_dir * BALL_X_SPEED * dft
     new_y = ball_y + ball_y_dir * BALL_Y_SPEED * dft
 
-    score = -0.05
+    score = -0.005
     done = False
 
     # Vertical wall collisions
@@ -211,7 +228,7 @@ def _update_ball(
         else:
             new_x = PADDLE_BUFFER
             ball_x_dir = 1
-            score = -10
+            score = -5
             done = True
             return score, new_x, new_y, ball_x_dir, ball_y_dir, done
 

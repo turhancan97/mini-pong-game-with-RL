@@ -3,6 +3,10 @@
 ## Abstract
 This project implements a modular Deep Q-Learning (DQL) agent that learns to play Pong directly from pixels. The repository combines a lightweight pygame environment, convolutional neural networks built with TensorFlow/Keras, and Hydra-based experiment management. Training leverages experience replay, a soft-updated target network, and configurable logging utilities to facilitate reproducible research workflows.
 
+<div style="display: flex; justify-content: center;">
+  <img src="pong.png" alt="Pong" style="width: 50%;">
+</div>
+
 ## Table of Contents
 - [Deep Q-Learning for Pong](#deep-q-learning-for-pong)
   - [Abstract](#abstract)
